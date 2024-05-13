@@ -62,8 +62,6 @@ func (d Discovery) parseToDiscoveryFormat(topSystems []TopSystem) ([]ServiceDisc
 			}
 			sd.Labels[fmt.Sprintf("__meta_%s", labelName)] = labelValue
 		}
-		// Add Internal Fabric Name
-		sd.Labels["__aci_exporter_fabric_name"] = d.Fabric
 		serviceDiscovery = append(serviceDiscovery, *sd)
 	}
 	return serviceDiscovery, nil
