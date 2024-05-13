@@ -366,45 +366,48 @@ type HandlerInit struct {
 
 func (h HandlerInit) discovery(w http.ResponseWriter, r *http.Request) {
 
-	fabric := r.URL.Query().Get("fabric")
-	if fabric != strings.ToLower(fabric) {
-		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-		w.Header().Set("Content-Length", "0")
-		log.WithFields(log.Fields{
-			"fabric": fabric,
-		}).Warning("fabric target must be in lower case")
-		lrw := loggingResponseWriter{ResponseWriter: w}
-		lrw.WriteHeader(400)
-		return
-	}
+	//fabric := r.URL.Query().Get("fabric")
+	// if fabric != strings.ToLower(fabric) {
+	// 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	// 	w.Header().Set("Content-Length", "0")
+	// 	log.WithFields(log.Fields{
+	// 		"fabric": fabric,
+	// 	}).Warning("fabric target must be in lower case")
+	// 	lrw := loggingResponseWriter{ResponseWriter: w}
+	// 	lrw.WriteHeader(400)
+	// 	return
+	// }
 
-	_, ok := h.AllFabrics[fabric]
-	if !ok {
-		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-		w.Header().Set("Content-Length", "0")
-		log.WithFields(log.Fields{
-			"fabric": fabric,
-		}).Warning("fabric target do not exists")
-		lrw := loggingResponseWriter{ResponseWriter: w}
-		lrw.WriteHeader(404)
-		return
-	}
+	// _, ok := h.AllFabrics[fabric]
+	// if !ok {
+	// 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	// 	w.Header().Set("Content-Length", "0")
+	// 	log.WithFields(log.Fields{
+	// 		"fabric": fabric,
+	// 	}).Warning("fabric target do not exists")
+	// 	lrw := loggingResponseWriter{ResponseWriter: w}
+	// 	lrw.WriteHeader(404)
+	// 	return
+	// }
+	var serviceDiscoveries []ServiceDiscovery
+	for fabric := range h.AllFabrics {
+		discovery := Discovery{
+			Fabric:      fabric,
+			LabelsKeys:  viper.GetStringSlice("service_discovery.labels"),
+			TargetField: viper.GetString("service_discovery.target_field"),
+		}
 
-	discovery := Discovery{
-		Fabric:      fabric,
-		LabelsKeys:  viper.GetStringSlice("service_discovery.labels"),
-		TargetField: viper.GetString("service_discovery.target_field"),
-	}
-
-	lrw := loggingResponseWriter{ResponseWriter: w}
-
-	serviceDiscoveries, err := discovery.DoDiscovery()
-	if err != nil {
-		lrw.WriteHeader(http.StatusInternalServerError)
-		return
+		sd, err := discovery.DoDiscovery()
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fabric": fabric,
+			}).Warning("Service Discovery failure")
+			return
+		}
+		serviceDiscoveries = append(serviceDiscoveries, sd...)
 	}
 	//json.NewEncoder(w).Encode(serviceDiscoveries)
-
+	lrw := loggingResponseWriter{ResponseWriter: w}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	lrw.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
@@ -413,6 +416,7 @@ func (h HandlerInit) discovery(w http.ResponseWriter, r *http.Request) {
 		lrw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 }
 
 func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {

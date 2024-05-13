@@ -88,5 +88,5 @@ func SetDefaultValues() {
 		"inbMgmtAddr", "name", "nameAlias", "nodeType", "oobMgmtAddr", "podId", "role", "serial", "siteId", "state",
 		"version",
 	})
-	viper.SetDefault("service_discovery.target_field", "name")
+	viper.SetDefault("service_discovery.target_field", "id")
 }

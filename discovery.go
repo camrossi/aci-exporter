@@ -22,10 +22,13 @@ type Discovery struct {
 }
 
 func (d Discovery) DoDiscovery() ([]ServiceDiscovery, error) {
+	// I want a target that is the whole site i.e. not a node
+	var site ServiceDiscovery
+	site.Targets = append(site.Targets ,d.Fabric)
+	// Then query all the nodes
 	class := "topSystem"
 	query := ""
 	data := cliQuery(&d.Fabric, &class, &query)
-
 	var topSystems []TopSystem
 	result := gjson.Get(data, "imdata")
 	result.ForEach(func(key, value gjson.Result) bool {
@@ -35,8 +38,9 @@ func (d Discovery) DoDiscovery() ([]ServiceDiscovery, error) {
 		topSystems = append(topSystems, *topSystem)
 		return true
 	})
-
-	return d.parseToDiscoveryFormat(topSystems)
+	sd , err := d.parseToDiscoveryFormat(topSystems)
+	sd = append(sd, site)
+	return sd, err
 }
 
 func (d Discovery) parseToDiscoveryFormat(topSystems []TopSystem) ([]ServiceDiscovery, error) {
@@ -44,11 +48,12 @@ func (d Discovery) parseToDiscoveryFormat(topSystems []TopSystem) ([]ServiceDisc
 	for _, topSystem := range topSystems {
 		sd := &ServiceDiscovery{}
 		sd.Labels = make(map[string]string)
-		targetValue, err := d.getField(&topSystem, d.TargetField)
+		TargetField, err := d.getField(&topSystem, d.TargetField)
 		if err != nil {
 			return serviceDiscovery, err
 		}
-
+		targetValue := d.Fabric + "&nodeid=" + TargetField
+	
 		sd.Targets = append(sd.Targets, targetValue)
 		for _, labelName := range d.LabelsKeys {
 			labelValue, err := d.getField(&topSystem, labelName)
@@ -57,6 +62,8 @@ func (d Discovery) parseToDiscoveryFormat(topSystems []TopSystem) ([]ServiceDisc
 			}
 			sd.Labels[fmt.Sprintf("__meta_%s", labelName)] = labelValue
 		}
+		// Add Internal Fabric Name
+		sd.Labels["__aci_exporter_fabric_name"] = d.Fabric
 		serviceDiscovery = append(serviceDiscovery, *sd)
 	}
 	return serviceDiscovery, nil
