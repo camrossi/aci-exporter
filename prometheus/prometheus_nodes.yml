@@ -61,7 +61,6 @@ scrape_configs:
       # the inbMgmtAddr - just change the below relabeling
       - source_labels: [ __meta_oobMgmtAddr ]
         target_label: __param_node
-
       - source_labels: [ __meta_id ]
         target_label: node_id
       - source_labels: [ __meta_id ]
