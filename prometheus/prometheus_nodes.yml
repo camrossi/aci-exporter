@@ -9,13 +9,12 @@ global:
 scrape_configs:
 
   - job_name: 'aci'
-    scrape_interval: 1m
+    scrape_interval: 5m
     scrape_timeout: 30s
     metrics_path: /probe
     params:
       queries:
-        - health,fabric_node_info,object_count,max_capacity
-
+        - ps_power_usage,health,fabric_node_info,object_count,max_capacity,temperature_board,temperature_sup,uptime_topsystem,vlans,static_binding_info,dynamic_binding_info,epg_port_vlan_binding,epg_port_vxlan_binding,epg_to_port
     static_configs:
       - targets: [ 'sydney' ]
 
@@ -33,8 +32,7 @@ scrape_configs:
     metrics_path: /probe
     params:
       queries:
-        - node_interface_info
-
+        - node_bgp_peers,node_bgp_peers_af,node_interface_info,node_interface_rx_stats,node_interface_rx_err_stats,node_interface_tx_stats,node_interface_tx_err_stats,node_scale_profiles,node_active_scale_profile,node_tcam_current,node_labels_current,node_mac_current,node_ipv4_current,node_ipv6_current,node_mcast_current,node_vlan_current,node_lpm_current,node_slash32_current,node_slash128_current,node_scale_ctx,node_ospf_neighbors,node_cpu,node_memory,node_fru_power_usage
     http_sd_configs:
       - url: "http://localhost:9643/sd?target=sydney"
         refresh_interval: 5m

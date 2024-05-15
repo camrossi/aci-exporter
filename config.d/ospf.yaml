@@ -1,6 +1,6 @@
 class_queries:
   # OSPF Neighbors
-  ospf_neighbors:
+  node_ospf_neighbors:
     class_name: ospfAdjEp
     query_parameter: '?order-by=ospfAdjEp.dn&rsp-subtree-include=required&rsp-subtree-class=ospfAdjStats&rsp-subtree=children'
     metrics:
@@ -11,7 +11,7 @@ class_queries:
         value_calculation: "date"
     labels:
       - property_name: ospfAdjEp.attributes.dn
-        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*).*/dom-(?P<vrf>.*)/if-\\[(?P<interface>.*)\\]"
+        regex: ".*/dom-(?P<vrf>.*)/if-\\[(?P<interface>.*)\\]"
       - property_name: ospfAdjEp.attributes.area
         regex: "(?P<area>.*)"
       - property_name: ospfAdjEp.attributes.id
