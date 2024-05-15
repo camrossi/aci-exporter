@@ -87,7 +87,7 @@ class_queries:
 
   ps_power_usage:
     class_name: eqptPsPower5min
-    query_parameter: '?ordfabric_node_infoer-by=eqptPsPower5min.dn'
+    query_parameter: '?order-by=eqptPsPower5min.dn'
     metrics:
       - name: psu_power_drawn_avg
         value_name: eqptPsPower5min.attributes.drawnAvg
