@@ -1,6 +1,5 @@
 class_queries:
   node_cpu:
-    #This is only for the switches
     class_name: procSysCPU5min
     metrics:
       - name: node_cpu_user
@@ -23,7 +22,6 @@ class_queries:
         regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/procsys/CDprocSysCPU5min"
 
   node_memory:
-    #This is only for the switches
     class_name: procSysMem5min
     metrics:
       - name: node_memory_used
@@ -40,7 +38,7 @@ class_queries:
       - property_name: procSysMem5min.attributes.dn
         regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/procsys/CDprocSysMem5min"
 
-  temperature_sup:
+  node_temperature_sup:
     class_name: eqptSensor
     #                                                       topology/pod-1/node-101/sys/ch/supslot-1/sup/sensor-1"
     query_parameter: '?query-target-filter=wcard(eqptSensor.dn,"sup")'
@@ -53,7 +51,7 @@ class_queries:
       - property_name: eqptSensor.attributes.dn
         regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/ch/supslot-(?P<supslotid>[1-9][0-9]*)/sup/sensor-(?P<sensorid>[1-9][0-9]*)"
 
-  temperature_board:
+  node_temperature_board:
     class_name: eqptSensor
     query_parameter: '?query-target-filter=wcard(eqptSensor.dn,"bslot")'
     metrics:
@@ -65,7 +63,7 @@ class_queries:
       - property_name: eqptSensor.attributes.dn
         regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/ch/bslot/board/sensor-(?P<sensorid>[1-9][0-9]*)"
 
-  node_fru_power_usage:
+  fru_power_usage:
     class_name: eqptFruPower5min
     query_parameter: '?order-by=eqptFruPower5min.dn'
     metrics:
@@ -168,6 +166,8 @@ class_queries:
         type: gauge
         help: Max number of VRFs a node supports
     labels:
+      - property_name: configprofileEntity.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/.*"
       - property_name: configprofileEntity.attributes.name
         regex: "^(?P<active_profile>.*)"
 
@@ -181,6 +181,9 @@ class_queries:
         value_regex_transformation: "(?P<date>.*)"
         value_calculation: "date"
     labels:
+      - property_name: topoctrlFwdScaleProf.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/"
+
       # active_profile "default" is the same as configured_profile "high-policy" this is an inconsistency in the Object model
       - property_name: topoctrlFwdScaleProf.attributes.profType
         regex: "^(?P<configured_profile>.*)"
@@ -203,6 +206,9 @@ class_queries:
       - name: node_policy_capacity_base
         value_name: eqptcapacityPolUsage5min.attributes.polUsageCapBase
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityPolUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_labels_current:
     class_name: eqptcapacityPGLabelUsage5min
@@ -220,6 +226,9 @@ class_queries:
       - name: node_labels_capacity_base
         value_name: eqptcapacityPGLabelUsage5min.attributes.pgLblCapBase
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityPGLabelUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_mac_current:
     class_name: eqptcapacityL2TotalUsage5min
@@ -231,6 +240,9 @@ class_queries:
       - name: node_mac_capacity
         value_name: eqptcapacityL2TotalUsage5min.attributes.totalEpCapLast
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityL2TotalUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_ipv4_current:
     class_name: eqptcapacityL3TotalUsage5min
@@ -239,6 +251,9 @@ class_queries:
       - name: node_ipv4_current
         value_name: eqptcapacityL3TotalUsage5min.attributes.v4TotalEpLast
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityL3TotalUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_ipv6_current:
     class_name: eqptcapacityL3TotalUsage5min
@@ -247,6 +262,9 @@ class_queries:
       - name: node_ipv6_current
         value_name: eqptcapacityL3TotalUsage5min.attributes.v6TotalEpLast
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityL3TotalUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_mcast_current:
     class_name: eqptcapacityMcastUsage5min
@@ -264,6 +282,9 @@ class_queries:
       - name: node_mcast_capacity_base
         value_name: eqptcapacityMcastUsage5min.attributes.localEpCapBase
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityMcastUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_vlan_current:
     class_name: eqptcapacityVlanUsage5min
@@ -281,6 +302,9 @@ class_queries:
       - name: node_vlan_capacity_base
         value_name: eqptcapacityVlanUsage5min.attributes.totalCapBase
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityVlanUsage5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_lpm_current:
     class_name: eqptcapacityPrefixEntries5min
@@ -289,6 +313,9 @@ class_queries:
       - name: node_lpm_current
         value_name: eqptcapacityPrefixEntries5min.attributes.extNormalizedLast
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityPrefixEntries5min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_slash32_current:
     class_name: eqptcapacityL3v4Usage325min
@@ -301,6 +328,10 @@ class_queries:
         value_name: eqptcapacityL3v4Usage325min.attributes.v4TotalBase
         type: "gauge"
 
+    labels:
+      - property_name: eqptcapacityL3v4Usage325min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
+
   node_slash128_current:
     class_name: eqptcapacityL3v6Usage1285min
     query_parameter: '?order-by=eqptcapacityL3v6Usage1285min.dn'
@@ -311,6 +342,9 @@ class_queries:
       - name: node_slash128_base
         value_name: eqptcapacityL3v6Usage1285min.attributes.v6TotalBase
         type: "gauge"
+    labels:
+      - property_name: eqptcapacityL3v6Usage1285min.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"
 
   node_scale_ctx:
     # The class names are a bit confusing:
@@ -326,3 +360,5 @@ class_queries:
     labels:
       - property_name: ctxClassCnt.attributes.name
         regex: "^(?P<class>.*)"
+      - property_name: ctxClassCnt.attributes.dn
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)"

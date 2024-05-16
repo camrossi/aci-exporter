@@ -1,5 +1,5 @@
 class_queries:
-  bgp_peers:
+  node_bgp_peers:
     class_name: bgpPeer
     query_parameter: '?order-by=bgpPeer.dn&rsp-subtree=children&rsp-subtree-class=bgpPeerEntry'
     metrics:
@@ -14,7 +14,7 @@ class_queries:
       - property_name: bgpPeer.attributes.srcIf
         regex: "(?P<interface>.*)"
       - property_name: bgpPeer.attributes.dn
-        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/bgp/inst/dom-(?P<vrf>.*)/peer-"
+        regex: "^sys/bgp/inst/dom-(?P<vrf>.*)/peer-"
       - property_name: bgpPeer.children.[.*].attributes.flags
         regex: "(?P<flags>.*)"
       - property_name: bgpPeer.children.[.*].attributes.type
@@ -32,7 +32,7 @@ class_queries:
       - property_name: bgpPeer.children.[.*].attributes.rtrId
         regex: "(?P<id>.*)"
   # BGP Peers
-  bgp_peers_af:
+  node_bgp_peers_af:
     class_name: bgpPeerAfEntry
     query_parameter: '?order-by=bgpPeerAfEntry.dn'
     metrics:
@@ -44,6 +44,6 @@ class_queries:
         type: "gauge"
     labels:
       - property_name: bgpPeerAfEntry.attributes.dn
-        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/bgp/inst/dom-(?P<vrf>.*)/peer-.*\\/ent-\\[(?P<peer_ip>.*)\\]"
+        regex: "^sys/bgp/inst/dom-(?P<vrf>.*)/peer-.*\\/ent-\\[(?P<peer_ip>.*)\\]"
       - property_name: bgpPeerAfEntry.attributes.type
         regex: "(?P<address_family>.*)"
