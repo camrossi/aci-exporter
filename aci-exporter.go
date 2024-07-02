@@ -15,9 +15,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http/pprof"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -194,6 +196,7 @@ func main() {
 		GroupClassQueries:    queries.GroupClassQueries,
 	}
 
+	// Init all fabrics
 	allFabrics := make(map[string]*Fabric)
 
 	err = viper.UnmarshalKey("fabrics", &allFabrics)
@@ -202,6 +205,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Init discovery settings
+	for fabricName := range allFabrics {
+		if allFabrics[fabricName].DiscoveryConfig.TargetFields == nil {
+			allFabrics[fabricName].DiscoveryConfig.TargetFields = viper.GetStringSlice("service_discovery.target_fields")
+		}
+		if allFabrics[fabricName].DiscoveryConfig.LabelsKeys == nil {
+			allFabrics[fabricName].DiscoveryConfig.LabelsKeys = viper.GetStringSlice("service_discovery.labels")
+		}
+		if allFabrics[fabricName].DiscoveryConfig.TargetFormat == "" {
+			allFabrics[fabricName].DiscoveryConfig.TargetFormat = viper.GetString("service_discovery.target_format")
+		}
+	}
 	// Overwrite username or password for APIC by environment variables if set
 	for fabricName := range allFabrics {
 		fabricEnv(fabricName, allFabrics)
@@ -233,6 +248,7 @@ func main() {
 	// Setup handler for aci destinations
 	http.Handle("/probe", logCall(promMonitor(http.HandlerFunc(handler.getMonitorMetrics), responseTime, "/probe")))
 	http.Handle("/alive", logCall(promMonitor(http.HandlerFunc(alive), responseTime, "/alive")))
+	http.Handle("/sd", logCall(promMonitor(http.HandlerFunc(handler.discovery), responseTime, "/sd")))
 
 	// Setup handler for exporter metrics
 	http.Handle("/metrics", promhttp.HandlerFor(
@@ -336,7 +352,7 @@ func cliQuery(fabric *string, class *string, query *string) string {
 
 	fabricConfig := Fabric{Username: username, Password: password, Apic: apicControllers, AciName: aciName}
 	ctx := context.TODO()
-	con := *newAciConnection(ctx, &fabricConfig)
+	con := *newAciConnection(ctx, &fabricConfig, nil)
 	err = con.login()
 	if err != nil {
 		fmt.Printf("Login error %s", err)
@@ -345,7 +361,7 @@ func cliQuery(fabric *string, class *string, query *string) string {
 	defer con.logout()
 	var data string
 
-	if string((*query)[0]) != "?" {
+	if len(*query) > 0 && string((*query)[0]) != "?" {
 		data, err = con.getByClassQuery(*class, fmt.Sprintf("?%s", *query))
 	} else {
 		data, err = con.getByClassQuery(*class, *query)
@@ -362,6 +378,90 @@ type HandlerInit struct {
 	AllFabrics map[string]*Fabric
 }
 
+func (h HandlerInit) discovery(w http.ResponseWriter, r *http.Request) {
+
+	fabric := r.URL.Query().Get("target")
+	if fabric != strings.ToLower(fabric) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+		w.Header().Set("Content-Length", "0")
+		log.WithFields(log.Fields{
+			"fabric": fabric,
+		}).Warning("fabric target must be in lower case")
+		lrw := loggingResponseWriter{ResponseWriter: w}
+		lrw.WriteHeader(400)
+		return
+	}
+
+	if fabric != "" {
+		_, ok := h.AllFabrics[fabric]
+		if !ok {
+			w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+			w.Header().Set("Content-Length", "0")
+			log.WithFields(log.Fields{
+				"fabric": fabric,
+			}).Warning("fabric target do not exists")
+			lrw := loggingResponseWriter{ResponseWriter: w}
+			lrw.WriteHeader(404)
+			return
+		}
+	}
+	/*
+		config := DiscoveryConfiguration{
+			LabelsKeys:   nil,
+			TargetFields: nil,
+			TargetFormat: "",
+		}
+		// Init discovery with fabric specific
+		if h.AllFabrics[fabric].DiscoveryConfig.TargetFields != nil {
+			config.TargetFields = h.AllFabrics[fabric].DiscoveryConfig.TargetFields
+		} else {
+			config.TargetFields = viper.GetStringSlice("service_discovery.target_fields")
+		}
+		if h.AllFabrics[fabric].DiscoveryConfig.LabelsKeys != nil {
+			config.LabelsKeys = h.AllFabrics[fabric].DiscoveryConfig.LabelsKeys
+		} else {
+			config.LabelsKeys = viper.GetStringSlice("service_discovery.labels")
+		}
+		if h.AllFabrics[fabric].DiscoveryConfig.TargetFormat != "" {
+			config.TargetFormat = h.AllFabrics[fabric].DiscoveryConfig.TargetFormat
+		} else {
+			config.TargetFormat = viper.GetString("service_discovery.target_format")
+		}
+
+	*/
+	/*
+		config := DiscoveryConfiguration{
+			LabelsKeys:   viper.GetStringSlice("service_discovery.labels"),
+			TargetFields: viper.GetStringSlice("service_discovery.target_fields"),
+			TargetFormat: viper.GetString("service_discovery.target_format"),
+		}
+
+	*/
+
+	discovery := Discovery{
+		Fabric:  fabric,
+		Fabrics: h.AllFabrics,
+		//DiscoveryConfig: config,
+	}
+
+	lrw := loggingResponseWriter{ResponseWriter: w}
+
+	serviceDiscoveries, err := discovery.DoDiscovery()
+	if err != nil {
+		lrw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	lrw.WriteHeader(http.StatusOK)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err := enc.Encode(serviceDiscoveries); err != nil {
+		lrw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 
 	openmetrics := false
@@ -370,9 +470,25 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 		openmetrics = true
 	}
 
+	var node *string
 	fabric := r.URL.Query().Get("target")
 	queries := r.URL.Query().Get("queries")
-
+	nodeName := r.URL.Query().Get("node")
+	if nodeName != "" {
+		// Check if the nodeName is a valid url if not append https://
+		if queries == "" {
+			lrw := loggingResponseWriter{ResponseWriter: w}
+			lrw.WriteHeader(400)
+			return
+		}
+		_, err := url.ParseRequestURI(nodeName)
+		if err != nil {
+			nodeName = fmt.Sprintf("https://%s", nodeName)
+		}
+		node = &nodeName
+	} else {
+		node = nil
+	}
 	if fabric != strings.ToLower(fabric) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 		w.Header().Set("Content-Length", "0")
@@ -399,7 +515,7 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	ctx = context.WithValue(ctx, "fabric", fabric)
-	api := *newAciAPI(ctx, h.AllFabrics[fabric], h.AllQueries, queries)
+	api := *newAciAPI(ctx, h.AllFabrics[fabric], h.AllQueries, queries, node)
 
 	start := time.Now()
 	aciName, metrics, err := api.CollectMetrics()
@@ -438,7 +554,8 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		lrw.WriteHeader(503)
 	}
-	w.Write([]byte(bodyText))
+	_, _ = w.Write([]byte(bodyText))
+
 	return
 }
 
@@ -450,7 +567,7 @@ func alive(w http.ResponseWriter, r *http.Request) {
 	lrw := loggingResponseWriter{ResponseWriter: w}
 	lrw.WriteHeader(200)
 
-	w.Write([]byte(alive))
+	_, _ = w.Write([]byte(alive))
 }
 
 func nextRequestID() ksuid.KSUID {

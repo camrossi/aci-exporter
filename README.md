@@ -4,6 +4,9 @@ aci-exporter - A Cisco ACI Prometheus exporter
 
 # Overview
 The aci-exporter provide metrics from a Cisco ACI fabric by using the ACI Rest API against ACPI controller(s).
+The exporter also have the capability to scrape individual splines and leafs based using the aci-exporter inbuilt 
+http based service discovery. Doing direct node queries is typical useful in very large fabrics, where doing all 
+api calls through the apic can Direct node based queries relies on the authentication through the apic.
 
 The exporter can return data both in the [Prometheus](https://prometheus.io/) and the 
 [Openmetrics](https://openmetrics.io/) (v1) exposition format. 
@@ -422,6 +425,184 @@ The aci-exporter will attach the following labels to all metrics
 
 - `aci` the name of the ACI. This is done by an API call.
 - `fabric` the name of the configuration.
+
+# Use aci-exporter in large fabric setups (since 0.8.0)
+In large fabrics the aci-exporter provide a way to distribute the api calls to the individual spine and leaf nodes 
+instead of using a single apic (or multiple behind a LB).
+This configuration depend on the aci-exporter's dynamic service discovery used by Prometheus. The discovery detect all 
+the current nodes in the fabric including the apic's based on the `topSystems` class. To collect metrics the same 
+`/probe` api is used with the addition 
+of the query parameter `node` that is set to the spine or leaf node where to scrape.
+
+## Service discovery
+The service discovery is exposed on the `/sd` endpoint where the query parameter `target` is the name in fabric in the
+`config.yml` file, e.g. `'http://localhost:9643/sd?fabric=xyz'`. The output can look like this:
+
+```json
+    ....
+    },
+    {
+        "targets": [
+            "sydney#172.16.0.68"
+        ],
+        "labels": {
+            "__meta_aci_exporter_fabric": "sydney",
+            "__meta_address": "10.3.96.66",
+            "__meta_dn": "topology/pod-2/node-202/sys",
+            "__meta_fabricDomain": "fab2",
+            "__meta_fabricId": "1",
+            "__meta_id": "202",
+            "__meta_inbMgmtAddr": "0.0.0.0",
+            "__meta_name": "leaf202",
+            "__meta_nameAlias": "",
+            "__meta_nodeType": "unspecified",
+            "__meta_oobMgmtAddr": "172.16.0.68",
+            "__meta_podId": "2",
+            "__meta_role": "leaf",
+            "__meta_serial": "FDO2442054U",
+            "__meta_siteId": "2",
+            "__meta_state": "in-service",
+            "__meta_version": "n9000-16.0(5h)"
+        }
+    },
+    .....
+```
+As describe in the example above the `targets` is by default set to the fabric name defined in the aci-exporter 
+config.yaml, the label `__meta_aci_exporter_fabric` and the label `__meta_oobMgmtAddr` separated with a `#` character.
+The `#` character can be used in the prometheus config as a separator to get both query parameters needed to access a 
+single node of a spine or leaf:
+```yaml
+    relabel_configs:
+      - source_labels: [ __meta_role ]
+        # Only run this job for spine and leaf roles
+        regex: "(spine|leaf)"
+        action: "keep"
+      
+      # Get the target param from __address__ that is <fabric>#<oobMgmtAddr> by default
+      - source_labels: [ __address__ ]
+        separator: "#"
+        regex: (.*)#(.*)
+        replacement: "$1"
+        target_label: __param_target
+
+      # Get the node param from __address__ that is <fabric>#<oobMgmtAddr> by default
+      - source_labels: [ __address__ ]
+        separator: "#"
+        regex: (.*)#(.*)
+        replacement: "$2"
+        target_label: 
+```
+
+If the endpoint is called without a query parameter, service discovery is done for all configured fabrics.
+The discovery response can now be used in the prometheus configuration as described in the example file 
+[`prometheus/prometheus_nodes.yml`](prometheus/prometheus_nodes.yml).
+
+What the service discovery should return can be highly configurable. This is both related to the targets and labels 
+returned. 
+
+Overriding the defaults can be done for all fabrics, but also for individual fabrics. The individual configuration always
+take precedence.  
+
+For the targets the default is to return fabric name and `oobMgmtAddr`, but if all fabrics instead use the inbMgmtAddr 
+for access this can be changed in the `config.yaml`  
+
+```yaml
+# Common service discovery
+service_discovery:
+  target_format: "%s#%s"
+  target_fields:
+    - aci_exporter_fabric
+    - inMgmtAddr
+```
+
+For each fabric the discovery can also be override using the same definitions as above but on the fabric level.
+```yaml
+fabrics:
+  # This is the Cisco provided sandbox that is open for testing
+  cisco_sandbox:
+    username: admin
+    password: <check the cisco sandbox to get the password>
+    apic:
+      - https://sandboxapicdc.cisco.com
+    service_discovery:
+     target_format: "%s#%s"
+     target_fields:
+      - aci_exporter_fabric
+      - inbMgmtAddr
+```
+
+All fields returned by the `topSystems` class query can be used as targets and labels.
+
+## Fabric service discovery 
+The service discovery will also return the discovery of the configured aci-exporter fabrics. This will be entires
+with the following content:
+
+```yaml
+    {
+        "targets": [
+            "cisco_sandbox"
+        ],
+        "labels": {
+            "__meta_role": "aci_exporter_fabric"
+        }
+    }
+
+``` 
+
+This can now be used from the prometheus configuration to do the "classic" apic queries like:
+```yaml
+  - job_name: 'aci'
+    scrape_interval: 1m
+    scrape_timeout: 30s
+    metrics_path: /probe
+    params:
+      queries:
+        - health,fabric_node_info,object_count,max_capacity
+
+    http_sd_configs:
+      - url: "http://localhost:9643/sd"
+        refresh_interval: 5m
+
+    relabel_configs:
+      - source_labels: [ __meta_role ]
+        regex: "aci_exporter_fabric"
+        action: "keep"
+
+      - source_labels: [ __address__ ]
+        target_label: __param_target
+      - source_labels: [ __param_target ]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9643
+```
+Please review [`prometheus/prometheus_nodes.yml`](prometheus/prometheus_nodes.yml) example. With discovery there is 
+no need for any static configuration and only two job configurations to manage all aci fabrics configured.
+
+## Configure node queries
+> This my change
+There is no difference how a node query is configured in the aci-exporter from apic query except:
+1. Not all queries are supported on the node
+2. When extracting label values there is no information about the node id or pod id. These must be managed by 
+discovery and relabeling, see [`prometheus/prometheus_nodes.yml`](prometheus/prometheus_nodes.yml)
+3. The resulting DN is different between apic api and node api. From the apic we typical do label extraction using 
+```yaml
+    labels:
+      # The field in the json used to parse the labels from
+      - property_name: ethpmPhysIf.attributes.dn
+        # The regex where the string enclosed in the P<xyz> is the label name
+        regex: "^topology/pod-(?P<podid>[1-9][0-9]*)/node-(?P<nodeid>[1-9][0-9]*)/sys/phys-\\[(?P<interface>[^\\]]+)\\]/"
+```
+  In the above the topology path is part of the response. But for a node based query the same would be:
+```yaml
+    labels:
+      # The field in the json used to parse the labels from
+      - property_name: ethpmPhysIf.attributes.dn
+        # The regex where the string enclosed in the P<xyz> is the label name
+        regex: "^sys/phys-\\[(?P<interface>[^\\]]+)\\]/"
+```
+ As mentioned above the podid and nodeid is added to the timeserie using Prometheus relabeling.
+
+4. Node queries must have named queries in the Prometheus config
 
 # Configuration
 

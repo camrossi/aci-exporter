@@ -89,4 +89,11 @@ func SetDefaultValues() {
 	viper.SetDefault("httpserver.write_timeout", 0)
 	viper.BindEnv("httpserver.write_timeout")
 
+	// Service discovery
+	viper.SetDefault("service_discovery.labels", []string{"address", "dn", "fabricDomain", "fabricId", "id",
+		"inbMgmtAddr", "name", "nameAlias", "nodeType", "oobMgmtAddr", "podId", "role", "serial", "siteId", "state",
+		"version",
+	})
+	viper.SetDefault("service_discovery.target_fields", []string{"aci_exporter_fabric", "oobMgmtAddr"})
+	viper.SetDefault("service_discovery.target_format", "%s#%s")
 }
