@@ -321,7 +321,7 @@ func (c *AciConnection) get(class string, url string) ([]byte, int, error) {
 	return body, status, err
 }
 
-func (c *AciConnection) doGet(class string, url string) ([]byte, int, uint64, error) {
+func (c AciConnection) doGet(class string, url string) ([]byte, int, uint64, error) {
 
 	var resp http.Response
 
@@ -356,6 +356,23 @@ func (c *AciConnection) doGet(class string, url string) ([]byte, int, uint64, er
 		for k, v := range c.Headers {
 			req.Header.Set(k, v)
 		}
+		
+		cookie := http.Cookie{
+			Name:       "APIC-cookie",
+			Value:      c.token.token,
+			Path:       "",
+			Domain:     "",
+			Expires:    time.Time{},
+			RawExpires: "",
+			MaxAge:     0,
+			Secure:     false,
+			HttpOnly:   false,
+			SameSite:   0,
+			Raw:        "",
+			Unparsed:   nil,
+		}
+		
+		req.AddCookie(&cookie)
 
 		// Will append the APIC-cookie
 		resp, err := c.Client.Do(req)
@@ -445,7 +462,22 @@ func (c AciConnection) doGetParallel(class string, url string) ([]byte, int, uin
 	for k, v := range c.Headers {
 		req1.Header.Set(k, v)
 	}
-
+	cookie := http.Cookie{
+		Name:       "APIC-cookie",
+		Value:      c.token.token,
+		Path:       "",
+		Domain:     "",
+		Expires:    time.Time{},
+		RawExpires: "",
+		MaxAge:     0,
+		Secure:     false,
+		HttpOnly:   false,
+		SameSite:   0,
+		Raw:        "",
+		Unparsed:   nil,
+	}
+	
+	req1.AddCookie(&cookie)
 	// Will append the APIC-cookie
 	resp1, err := c.Client.Do(req1)
 	if req1 != nil {
