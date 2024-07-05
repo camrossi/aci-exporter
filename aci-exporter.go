@@ -494,7 +494,6 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			h.AllFabrics[fabricNode] = &Fabric{}
 			*h.AllFabrics[fabricNode] = *h.AllFabrics[fabric]
-			//h.AllFabrics[fabricNode].Apic = h.AllFabrics[fabric].Apic
 			h.AllFabrics[fabricNode].Node = *node
 		}
 
@@ -524,6 +523,7 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 		lrw.WriteHeader(404)
 		return
 	}
+	fabric_name := fabric
 	if nodeName != "" {
 		fabric = fabric + *node
 	}
@@ -541,7 +541,7 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 
 	commonLabels := make(map[string]string)
 	commonLabels["aci"] = aciName
-	commonLabels["fabric"] = fabric
+	commonLabels["fabric"] = fabric_name
 
 	start = time.Now()
 	metricsFormat := NewMetricFormat(openmetrics, viper.GetBool("metric_format.label_key_to_lower_case"),
