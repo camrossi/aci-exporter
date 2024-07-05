@@ -1,0 +1,162 @@
+{
+    "level": "info",
+    "msg": "Logging call",
+    "time": "2024-07-04T13:37:44+10:00"
+}
+{
+    "URL": {
+        "Scheme": "",
+        "Opaque": "",
+        "User": null,
+        "Host": "",
+        "Path": "/probe",
+        "RawPath": "",
+        "OmitHost": false,
+        "ForceQuery": false,
+        "RawQuery": "node=192.168.68.38\u0026target=fab2\u0026queries=node_top",
+        "Fragment": "",
+        "RawFragment": ""
+    },
+    "level": "debug",
+    "msg": "Got HTTP Request",
+    "time": "2024-07-04T13:37:47+10:00"
+}
+{
+    "level": "info",
+    "msg": "Logging call",
+    "time": "2024-07-04T13:37:47+10:00"
+}
+{
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "token still valid",
+    "requestid": "2ilTHt8Gj4UGJN0jap5g01P1RtL",
+    "time": "2024-07-04T13:37:47+10:00",
+    "token": "valid",
+    "valid_time_seconds": 293
+}
+{
+    "URL": {
+        "Scheme": "",
+        "Opaque": "",
+        "User": null,
+        "Host": "",
+        "Path": "/probe",
+        "RawPath": "",
+        "OmitHost": false,
+        "ForceQuery": false,
+        "RawQuery": "node=192.168.68.37\u0026target=fab2\u0026queries=node_top",
+        "Fragment": "",
+        "RawFragment": ""
+    },
+    "level": "debug",
+    "msg": "Got HTTP Request",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "token still valid",
+    "requestid": "2ilTHt8Gj4UGJN0jap5g01P1RtL",
+    "time": "2024-07-04T13:37:49+10:00",
+    "token": "valid",
+    "valid_time_seconds": 291
+}
+{
+    "class": "topSystem",
+    "exec_time": 5739,
+    "fabric": "fab2",
+    "length": 1322,
+    "level": "info",
+    "method": "GET",
+    "msg": "api call fabric",
+    "requestid": "2ilTHt8Gj4UGJN0jap5g01P1RtL",
+    "status": 200,
+    "time": "2024-07-04T13:37:49+10:00",
+    "uri": "https://192.168.68.38/api/class/topSystem.json"
+}
+{
+    "class": "topSystem",
+    "exec_time": 5023,
+    "fabric": "fab2",
+    "length": 1322,
+    "level": "info",
+    "method": "GET",
+    "msg": "api call fabric",
+    "requestid": "2ilTHt8Gj4UGJN0jap5g01P1RtL",
+    "status": 200,
+    "time": "2024-07-04T13:37:49+10:00",
+    "uri": "https://192.168.68.37/api/class/topSystem.json"
+}
+{
+    "exec_time": 1536607,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "total scrape time ",
+    "requestid": "2ilTfBjQfj5iKCo2WYeFUseH6Cc",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 1536652,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "total query collection time",
+    "requestid": "2ilTfBjQfj5iKCo2WYeFUseH6Cc",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 5472,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "total scrape time ",
+    "requestid": "2ilTfayOaqTdoVhrknPxpZTciDZ",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 5595,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "total query collection time",
+    "requestid": "2ilTfayOaqTdoVhrknPxpZTciDZ",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 203,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "metrics to prometheus format",
+    "requestid": "2ilTfBjQfj5iKCo2WYeFUseH6Cc",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 150,
+    "fabric": "fab2",
+    "level": "info",
+    "msg": "metrics to prometheus format",
+    "requestid": "2ilTfayOaqTdoVhrknPxpZTciDZ",
+    "time": "2024-07-04T13:37:49+10:00"
+}
+{
+    "exec_time": 5196631,
+    "fabric": "fab2",
+    "length": 392,
+    "level": "info",
+    "method": "GET",
+    "msg": "api call",
+    "requestid": "2ilTfBjQfj5iKCo2WYeFUseH6Cc",
+    "status": 200,
+    "time": "2024-07-04T13:37:49+10:00",
+    "uri": "/probe?node=192.168.68.38\u0026target=fab2\u0026queries=node_top"
+}
+{
+    "exec_time": 1537127,
+    "fabric": "fab2",
+    "length": 392,
+    "level": "info",
+    "method": "GET",
+    "msg": "api call",
+    "requestid": "2ilTfayOaqTdoVhrknPxpZTciDZ",
+    "status": 200,
+    "time": "2024-07-04T13:37:49+10:00",
+    "uri": "/probe?node=192.168.68.37\u0026target=fab2\u0026queries=node_top"
+}

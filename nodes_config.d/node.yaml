@@ -326,3 +326,13 @@ class_queries:
     labels:
       - property_name: ctxClassCnt.attributes.name
         regex: "^(?P<class>.*)"
+
+  node_top:
+    class_name: topSystem
+    metrics:
+      - name: node_id
+        value_name: topSystem.attributes.id
+        type: "gauge"
+    labels:
+      - property_name: topSystem.attributes.name
+        regex: "^(?P<name>.*)"
