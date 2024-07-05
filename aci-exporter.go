@@ -279,6 +279,7 @@ func main() {
 		"version":       version,
 		"port":          viper.GetInt("port"),
 		"config_file":   viper.ConfigFileUsed(),
+		"config_dir ":   viper.GetString("config_dir"),
 		"read_timeout":  viper.GetDuration("httpserver.read_timeout") * time.Second,
 		"write_timeout": viper.GetDuration("httpserver.write_timeout") * time.Second,
 	}).Info("aci-exporter starting")
@@ -486,6 +487,17 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 			nodeName = fmt.Sprintf("https://%s", nodeName)
 		}
 		node = &nodeName
+
+		fabricNode := fabric + *node
+		_, ok := h.AllFabrics[fabricNode]
+
+		if !ok {
+			h.AllFabrics[fabricNode] = &Fabric{}
+			*h.AllFabrics[fabricNode] = *h.AllFabrics[fabric]
+			//h.AllFabrics[fabricNode].Apic = h.AllFabrics[fabric].Apic
+			h.AllFabrics[fabricNode].Node = *node
+		}
+
 	} else {
 		node = nil
 	}
@@ -512,7 +524,9 @@ func (h HandlerInit) getMonitorMetrics(w http.ResponseWriter, r *http.Request) {
 		lrw.WriteHeader(404)
 		return
 	}
-
+	if nodeName != "" {
+		fabric = fabric + *node
+	}
 	ctx := r.Context()
 	ctx = context.WithValue(ctx, "fabric", fabric)
 	api := *newAciAPI(ctx, h.AllFabrics[fabric], h.AllQueries, queries, node)
